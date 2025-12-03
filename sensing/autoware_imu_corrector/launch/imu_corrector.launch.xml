@@ -7,7 +7,16 @@
   <arg name="param_file" default="$(find-pkg-share autoware_imu_corrector)/config/imu_corrector.param.yaml"/>
   <arg name="param_scale_file" default="$(find-pkg-share autoware_imu_corrector)/config/gyro_scale_estimator.param.yaml"/>
 
+  <!-- Agnocast -->
+  <arg name="use_agnocast" default="false" description="enable Agnocast for planning containers"/>
+  <arg name="agnocast_heaphook_path" description="path to agnocast heaphook library"/>
+
+  <let name="ld_preload_value" value="$(var agnocast_heaphook_path):$(env LD_PRELOAD '')" if="$(var use_agnocast)"/>
+  <let name="ld_preload_value" value="$(env LD_PRELOAD '')" unless="$(var use_agnocast)"/>
+
   <node pkg="autoware_imu_corrector" exec="imu_corrector_node" output="both">
+    <env name="LD_PRELOAD" value="$(var ld_preload_value)"/>
+
     <remap from="input" to="$(var input_topic)"/>
     <remap from="gyro_bias_input" to="$(var input_gyro_bias_topic)"/>
     <remap from="gyro_scale_input" to="$(var input_gyro_scale_topic)"/>

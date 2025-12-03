@@ -89,7 +89,10 @@ ImuCorrector::ImuCorrector(const rclcpp::NodeOptions & options)
   gyro_scale_sub_ = create_subscription<Vector3Stamped>(
     "gyro_scale_input", rclcpp::SensorDataQoS(),
     std::bind(&ImuCorrector::callback_scale, this, std::placeholders::_1));
-  imu_pub_ = create_publisher<sensor_msgs::msg::Imu>("output", rclcpp::QoS{10});
+
+  imu_pub_ =
+    AUTOWARE_CREATE_PUBLISHER2(sensor_msgs::msg::Imu, "output", rclcpp::QoS(10).reliable());
+
   gyro_scale_.vector.x = 1.0;
   gyro_scale_.vector.y = 1.0;
   gyro_scale_.vector.z = 1.0;
@@ -166,19 +169,22 @@ void ImuCorrector::callback_imu(const sensor_msgs::msg::Imu::ConstSharedPtr imu_
     return;
   }
 
-  sensor_msgs::msg::Imu imu_msg_base_link;
-  imu_msg_base_link.header.stamp = imu_msg_ptr->header.stamp;
-  imu_msg_base_link.header.frame_id = output_frame_;
-  imu_msg_base_link.linear_acceleration =
+  auto imu_msg_base_link_ptr = ALLOCATE_OUTPUT_MESSAGE_UNIQUE(imu_pub_);
+
+  imu_msg_base_link_ptr->header.stamp = imu_msg_ptr->header.stamp;
+  imu_msg_base_link_ptr->header.frame_id = output_frame_;
+
+  imu_msg_base_link_ptr->linear_acceleration =
     transform_vector3(imu_msg.linear_acceleration, *tf_imu2base_ptr);
-  imu_msg_base_link.linear_acceleration_covariance =
+  imu_msg_base_link_ptr->linear_acceleration_covariance =
     transform_covariance(imu_msg.linear_acceleration_covariance);
-  imu_msg_base_link.angular_velocity =
+
+  imu_msg_base_link_ptr->angular_velocity =
     transform_vector3(imu_msg.angular_velocity, *tf_imu2base_ptr);
-  imu_msg_base_link.angular_velocity_covariance =
+  imu_msg_base_link_ptr->angular_velocity_covariance =
     transform_covariance(imu_msg.angular_velocity_covariance);
 
-  imu_pub_->publish(imu_msg_base_link);
+  imu_pub_->publish(std::move(imu_msg_base_link_ptr));
 }
 
 void ImuCorrector::callback_bias(const Vector3Stamped::ConstSharedPtr bias_msg_ptr)
