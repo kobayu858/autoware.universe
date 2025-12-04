@@ -342,7 +342,7 @@ void AEB::onPointCloud(const PointCloud2::ConstSharedPtr input_msg)
 
 bool AEB::fetchLatestData()
 {
-  const auto imu_ptr = sub_imu_->takeData();
+  const auto imu_ptr = sub_imu_->take_data();
 
   if (imu_ptr) {
     RCLCPP_INFO_THROTTLE(
