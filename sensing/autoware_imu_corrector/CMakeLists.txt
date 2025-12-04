@@ -22,12 +22,12 @@ target_include_directories(gyro_bias_estimator
   PUBLIC include
 )
 
-rclcpp_components_register_node(imu_corrector
+# imu_corrector: Composable nodeとして登録（EXECUTORなし）
+rclcpp_components_register_nodes(imu_corrector
   PLUGIN "autoware::imu_corrector::ImuCorrector"
-  EXECUTABLE imu_corrector_node
-  EXECUTOR SingleThreadedExecutor
 )
 
+# gyro_bias_estimator: 既存のまま（Agnocast不使用）
 rclcpp_components_register_node(gyro_bias_estimator
   PLUGIN "autoware::imu_corrector::GyroBiasEstimator"
   EXECUTABLE gyro_bias_estimator_node

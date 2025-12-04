@@ -185,6 +185,8 @@ void ImuCorrector::callback_imu(const sensor_msgs::msg::Imu::ConstSharedPtr imu_
     transform_covariance(imu_msg.angular_velocity_covariance);
 
   imu_pub_->publish(std::move(imu_msg_base_link_ptr));
+  // RCLCPP_INFO(this->get_logger(), "[AGNOCAST DEBUG] Pub corrector");
+  RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "[AGNOCAST DEBUG] PUBLISH");
 }
 
 void ImuCorrector::callback_bias(const Vector3Stamped::ConstSharedPtr bias_msg_ptr)

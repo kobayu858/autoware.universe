@@ -253,6 +253,9 @@ typename Subscription<MessageT>::SharedPtr create_subscription(
   rclcpp::Node * node, const std::string & topic_name, const rclcpp::QoS & qos, Func && callback,
   const agnocast::SubscriptionOptions & options)
 {
+  bool enabled = use_agnocast();
+  std::cerr << "[DEBUG Wrapper] ccreate_subscription called. Topic: " << topic_name
+            << " Enabled: " << (use_agnocast() ? "YES" : "NO") << std::endl;
   return std::make_shared<Subscription<MessageT>>(
     node, topic_name, qos, std::forward<Func>(callback), options);
 }
@@ -346,6 +349,9 @@ template <typename MessageT>
 typename PollingSubscriber<MessageT>::SharedPtr create_polling_subscriber(
   rclcpp::Node * node, const std::string & topic_name, const rclcpp::QoS & qos)
 {
+  bool enabled = use_agnocast();
+  std::cerr << "[DEBUG Wrapper] create_polling_subscriber called. Topic: " << topic_name
+            << " Enabled: " << (use_agnocast() ? "YES" : "NO") << std::endl;
   if (use_agnocast()) {
     return std::make_shared<AgnocastPollingSubscriber<MessageT>>(node, topic_name, qos);
   } else {
@@ -417,7 +423,6 @@ public:
     const agnocast::PublisherOptions & options)
   {
     rclcpp::PublisherOptions ros2_options;
-    ros2_options.qos_overriding_options = options.qos_overriding_options;
     publisher_ = node->create_publisher<MessageT>(topic_name, qos, ros2_options);
   }
 
@@ -448,6 +453,9 @@ template <typename MessageT>
 typename Publisher<MessageT>::SharedPtr create_publisher(
   rclcpp::Node * node, const std::string & topic_name, const rclcpp::QoS & qos)
 {
+  bool enabled = use_agnocast();
+  std::cerr << "[DEBUG Wrapper] create_publisher called. Topic: " << topic_name
+            << " Enabled: " << (use_agnocast() ? "YES" : "NO") << std::endl;
   agnocast::PublisherOptions options;
   if (use_agnocast()) {
     return std::make_shared<AgnocastPublisher<MessageT>>(node, topic_name, qos, options);
