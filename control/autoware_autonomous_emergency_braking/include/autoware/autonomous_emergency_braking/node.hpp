@@ -17,6 +17,7 @@
 
 #include "autoware_utils/system/time_keeper.hpp"
 
+#include <autoware/agnocast_wrapper/autoware_agnocast_wrapper.hpp>
 #include <autoware/motion_utils/trajectory/trajectory.hpp>
 #include <autoware_utils/geometry/geometry.hpp>
 #include <autoware_utils/ros/polling_subscriber.hpp>
@@ -335,7 +336,8 @@ public:
     this, "~/input/pointcloud", autoware_utils::single_depth_sensor_qos()};
   autoware_utils::InterProcessPollingSubscriber<VelocityReport> sub_velocity_{
     this, "~/input/velocity"};
-  autoware_utils::InterProcessPollingSubscriber<Imu> sub_imu_{this, "~/input/imu"};
+  // autoware_utils::InterProcessPollingSubscriber<Imu> sub_imu_{this, "~/input/imu"};
+  AUTOWARE_POLLING_SUBSCRIBER_PTR(sensor_msgs::msg::Imu) sub_imu_;
   autoware_utils::InterProcessPollingSubscriber<Trajectory> sub_predicted_traj_{
     this, "~/input/predicted_trajectory"};
   autoware_utils::InterProcessPollingSubscriber<PredictedObjects> predicted_objects_sub_{
@@ -365,7 +367,8 @@ public:
    * @brief Callback for IMU messages
    * @param input_msg Shared pointer to the IMU message
    */
-  void onImu(const Imu::ConstSharedPtr input_msg);
+  // void onImu(const Imu::ConstSharedPtr input_msg);
+  void onImu(const AUTOWARE_MESSAGE_SHARED_PTR(const sensor_msgs::msg::Imu) input_msg);
 
   /**
    * @brief Timer callback function

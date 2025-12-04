@@ -7,12 +7,39 @@
   <arg name="param_file" default="$(find-pkg-share autoware_imu_corrector)/config/imu_corrector.param.yaml"/>
   <arg name="param_scale_file" default="$(find-pkg-share autoware_imu_corrector)/config/gyro_scale_estimator.param.yaml"/>
 
-  <node pkg="autoware_imu_corrector" exec="imu_corrector_node" output="both">
-    <remap from="input" to="$(var input_topic)"/>
-    <remap from="gyro_bias_input" to="$(var input_gyro_bias_topic)"/>
-    <remap from="gyro_scale_input" to="$(var input_gyro_scale_topic)"/>
-    <remap from="output" to="$(var output_topic)"/>
-    <param from="$(var param_file)"/>
-    <param from="$(var param_scale_file)"/>
-  </node>
+  <!-- Agnocast設定 -->
+  <let name="use_agnocast" value="true"/>
+  <let name="agnocast_heaphook_path" value="$(find-pkg-prefix agnocastlib)/lib/libagnocast_heaphook.so"/>
+
+  <let name="ld_preload_value" value="$(var agnocast_heaphook_path):$(env LD_PRELOAD '')" if="$(var use_agnocast)"/>
+  <let name="ld_preload_value" value="$(env LD_PRELOAD '')" unless="$(var use_agnocast)"/>
+
+  <let name="enable_agnocast_val" value="1" if="$(var use_agnocast)"/>
+  <let name="enable_agnocast_val" value="0" unless="$(var use_agnocast)"/>
+
+  <!-- Agnocast Component Container -->
+  <node_container pkg="agnocastlib" exec="agnocast_component_container" name="imu_corrector_container" namespace="" output="screen">
+    <!-- 環境変数設定 -->
+    <env name="LD_PRELOAD" value="$(var ld_preload_value)"/>
+    <env name="AGNOCAST_MEMPOOL_SIZE" value="536870912"/>
+    <env name="ENABLE_AGNOCAST" value="$(var enable_agnocast_val)"/>
+    
+    <!-- Container parameters -->
+    <param name="number_of_ros2_threads" value="2"/>
+    <param name="number_of_agnocast_threads" value="2"/>
+    <param name="yield_before_execute" value="false"/>
+    <param name="ros2_next_exec_timeout_ms" value="-1"/>
+    <param name="agnocast_next_exec_timeout_ms" value="50"/>
+
+    <!-- Composable Nodeを直接containerタグ内に配置 -->
+    <composable_node pkg="autoware_imu_corrector" plugin="autoware::imu_corrector::ImuCorrector" name="imu_corrector">
+      <remap from="input" to="$(var input_topic)"/>
+      <remap from="gyro_bias_input" to="$(var input_gyro_bias_topic)"/>
+      <remap from="gyro_scale_input" to="$(var input_gyro_scale_topic)"/>
+      <remap from="output" to="$(var output_topic)"/>
+      <param from="$(var param_file)"/>
+      <param from="$(var param_scale_file)"/>
+      <extra_arg name="use_intra_process_comms" value="true"/>
+    </composable_node>
+  </node_container>
 </launch>

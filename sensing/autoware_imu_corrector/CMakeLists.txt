@@ -2,11 +2,16 @@ cmake_minimum_required(VERSION 3.14)
 project(autoware_imu_corrector)
 
 find_package(autoware_cmake REQUIRED)
+find_package(autoware_agnocast_wrapper REQUIRED) 
 autoware_package()
 
 ament_auto_add_library(imu_corrector SHARED
   src/imu_corrector_core.cpp
 )
+
+autoware_agnocast_wrapper_setup(imu_corrector)
+ament_target_dependencies(imu_corrector autoware_agnocast_wrapper)
+target_include_directories(imu_corrector PUBLIC ${autoware_agnocast_wrapper_INCLUDE_DIRS})
 
 ament_auto_add_library(gyro_bias_estimator SHARED
   src/gyro_bias_estimator.cpp
@@ -17,12 +22,12 @@ target_include_directories(gyro_bias_estimator
   PUBLIC include
 )
 
-rclcpp_components_register_node(imu_corrector
+# imu_corrector: Composable nodeとして登録（EXECUTORなし）
+rclcpp_components_register_nodes(imu_corrector
   PLUGIN "autoware::imu_corrector::ImuCorrector"
-  EXECUTABLE imu_corrector_node
-  EXECUTOR SingleThreadedExecutor
 )
 
+# gyro_bias_estimator: 既存のまま（Agnocast不使用）
 rclcpp_components_register_node(gyro_bias_estimator
   PLUGIN "autoware::imu_corrector::GyroBiasEstimator"
   EXECUTABLE gyro_bias_estimator_node

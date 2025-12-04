@@ -156,6 +156,11 @@ AEB::AEB(const rclcpp::NodeOptions & node_options)
     updater_.setHardwareID("autonomous_emergency_braking");
     updater_.add("aeb_emergency_stop", this, &AEB::onCheckCollision);
   }
+
+  // Subscriber
+  sub_imu_ = AUTOWARE_CREATE_POLLING_SUBSCRIBER(
+    sensor_msgs::msg::Imu, "~/input/imu", rclcpp::QoS(1).reliable());
+
   // parameter
   publish_debug_pointcloud_ = declare_parameter<bool>("publish_debug_pointcloud");
   publish_debug_markers_ = declare_parameter<bool>("publish_debug_markers");
@@ -277,7 +282,7 @@ void AEB::onTimer()
   updater_.force_update();
 }
 
-void AEB::onImu(const Imu::ConstSharedPtr input_msg)
+void AEB::onImu(const AUTOWARE_MESSAGE_SHARED_PTR(const sensor_msgs::msg::Imu) input_msg)
 {
   // transform imu
   const auto logger = get_logger();
@@ -337,6 +342,16 @@ void AEB::onPointCloud(const PointCloud2::ConstSharedPtr input_msg)
 
 bool AEB::fetchLatestData()
 {
+  const auto imu_ptr = sub_imu_->take_data();
+
+  if (imu_ptr) {
+    RCLCPP_INFO_THROTTLE(
+      this->get_logger(), *this->get_clock(), 1000, "[AGNOCAST DEBUG] SUB POLLING");
+  }
+
+  // RCLCPP_INFO_THROTTLE(
+  //   this->get_logger(), *this->get_clock(), 1000, "[AGNOCAST DEBUG] Missing velocity -> Return");
+
   const auto missing = [this](const auto & name) {
     RCLCPP_INFO_SKIPFIRST_THROTTLE(get_logger(), *get_clock(), 5000, "[AEB] waiting for %s", name);
     return false;
@@ -376,7 +391,8 @@ bool AEB::fetchLatestData()
 
   const bool has_imu_path = std::invoke([&]() {
     if (!use_imu_path_) return false;
-    const auto imu_ptr = sub_imu_.take_data();
+    // const auto imu_ptr = sub_imu_.take_data();
+
     if (!imu_ptr) {
       return missing("imu message");
     }

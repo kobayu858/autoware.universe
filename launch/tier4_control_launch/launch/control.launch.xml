@@ -59,6 +59,16 @@
   <arg name="output_turn_indicators_cmd" default="/control/command/turn_indicators_cmd"/>
   <arg name="output_hazard_lights_cmd" default="/control/command/hazard_lights_cmd"/>
 
+  <arg name="use_agnocast" default="true"/>
+
+  <let name="agnocast_heaphook_path" value="$(find-pkg-prefix agnocastlib)/lib/libagnocast_heaphook.so"/>
+      
+  <let name="ld_preload_value" value="$(var agnocast_heaphook_path):$(env LD_PRELOAD '')" if="$(var use_agnocast)"/>
+  <let name="ld_preload_value" value="$(env LD_PRELOAD '')" unless="$(var use_agnocast)"/>
+
+  <let name="enable_agnocast_val" value="1" if="$(var use_agnocast)"/>
+  <let name="enable_agnocast_val" value="0" unless="$(var use_agnocast)"/>
+
   <group>
     <push-ros-namespace namespace="control"/>
 
@@ -206,7 +216,19 @@
 
     <group>
       <!-- set a control check container to run all control checker components in the same process -->
-      <node_container pkg="rclcpp_components" exec="$(var container_executable)" name="control_check_container" namespace="">
+      <!-- Agnocast container for control check components -->
+      <node_container pkg="agnocastlib" exec="agnocast_component_container_mt" name="control_check_container" namespace="">
+        <env name="LD_PRELOAD" value="$(var ld_preload_value)"/>
+        <env name="AGNOCAST_MEMPOOL_SIZE" value="536870912"/>
+        <env name="ENABLE_AGNOCAST" value="$(var enable_agnocast_val)"/>
+        
+        <!-- Container parameters -->
+        <param name="number_of_ros2_threads" value="2"/>
+        <param name="number_of_agnocast_threads" value="2"/>
+        <param name="yield_before_execute" value="false"/>
+        <param name="ros2_next_exec_timeout_ms" value="-1"/>
+        <param name="agnocast_next_exec_timeout_ms" value="50"/>
+        
         <composable_node pkg="autoware_glog_component" plugin="autoware::glog_component::GlogComponent" name="glog_control_check_container_component"/>
       </node_container>
 
